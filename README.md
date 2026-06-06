@@ -92,4 +92,9 @@ cliente recibe la URL del backend en build mediante `VITE_SERVER_URL`.
 
 ## Licencia
 
-Proyecto personal. Todos los derechos reservados.
+Software **propietario** — todos los derechos reservados. Consulta el archivo
+[LICENSE](LICENSE). No se concede ningún permiso de uso, copia, modificación o
+distribución sin autorización previa y por escrito del titular.
+
+> El Parchís es un juego tradicional de dominio público; la licencia cubre el
+> código y los recursos originales de esta aplicación, no las reglas del juego.

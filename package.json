@@ -1,6 +1,7 @@
 {
   "name": "parchis",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "workspaces": [
     "shared",
