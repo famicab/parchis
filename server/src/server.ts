@@ -17,8 +17,18 @@ export function crearServidor(): ServidorParchis {
   app.get('/health', (_req, res) => res.json({ ok: true }));
 
   const httpServer = createHttpServer(app);
+
+  const clientOrigin = process.env.CLIENT_ORIGIN;
+  if (!clientOrigin && process.env.NODE_ENV === 'production') {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[seguridad] CLIENT_ORIGIN no definido en producción: el CORS aceptará cualquier origen. ' +
+        'Define CLIENT_ORIGIN con el dominio del frontend para restringirlo.',
+    );
+  }
+
   const io = new Server<EventosCliente, EventosServidor>(httpServer, {
-    cors: { origin: process.env.CLIENT_ORIGIN ?? '*' },
+    cors: { origin: clientOrigin ?? '*' },
   });
 
   io.on('connection', (socket) => {

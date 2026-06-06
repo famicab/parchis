@@ -1,6 +1,25 @@
+# Dependencias y builds
 node_modules/
 dist/
+*.tsbuildinfo
+
+# Variables de entorno — NUNCA subir secretos.
+# Se ignoran todos los .env* y se mantienen solo los .example.
 .env
-.env.local
+.env.*
+!.env.example
+
+# Caches de herramientas y despliegue
+.vercel/
+.vite/
+coverage/
+*.local
+
+# Logs
 *.log
+npm-debug.log*
+
+# Sistema operativo / editor
 .DS_Store
+Thumbs.db
+.idea/
