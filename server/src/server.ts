@@ -2,10 +2,13 @@ import express from 'express';
 import { createServer as createHttpServer, type Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import type { EventosCliente, EventosServidor } from '@parchis/shared';
+import { RegistroSalas } from './salas/registro';
+import { registrarHandlersSala } from './salas/handlers';
 
 export interface ServidorParchis {
   httpServer: HttpServer;
   io: Server<EventosCliente, EventosServidor>;
+  registro: RegistroSalas;
 }
 
 /**
@@ -31,9 +34,12 @@ export function crearServidor(): ServidorParchis {
     cors: { origin: clientOrigin ?? '*' },
   });
 
+  const registro = new RegistroSalas();
+
   io.on('connection', (socket) => {
     socket.on('ping', () => socket.emit('pong'));
+    registrarHandlersSala(io, socket, registro);
   });
 
-  return { httpServer, io };
+  return { httpServer, io, registro };
 }

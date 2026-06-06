@@ -21,6 +21,17 @@ export interface Jugador {
   esHost: boolean;
 }
 
+export type FaseSala = 'LOBBY' | 'EN_CURSO' | 'TERMINADA';
+
+/** Representación de la sala que viaja al cliente (sin datos internos como socketId). */
+export interface ResumenSala {
+  codigo: string;
+  fase: FaseSala;
+  jugadores: Jugador[];
+  hostId: string;
+  maxJugadores: number;
+}
+
 export type FasePartida = 'EN_CURSO' | 'TERMINADA';
 
 export interface EstadoPartida {
@@ -33,6 +44,6 @@ export interface EstadoPartida {
   tiradaExtra: boolean; // si el turno repite
   ultimaFichaMovida: { color: Color; id: number } | null; // castigo de tres seises
   bonusPendiente: { tipo: '+20' | '+10' } | null; // bonificación manual sin resolver
-  fichas: Record<Color, Ficha[]>;
+  fichas: Partial<Record<Color, Ficha[]>>; // solo los colores presentes en `colores`
   ganador: Color | null;
 }

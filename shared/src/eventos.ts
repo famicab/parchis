@@ -1,15 +1,45 @@
 // Contrato de eventos WebSocket entre cliente y servidor.
 // Tipar ambos extremos con estas interfaces hace que cambiar un evento
 // rompa la compilación en cliente y servidor a la vez (deseable).
-// Alineado con plans/backlog-mvp.md §Contrato de eventos.
+// Alineado con plans/sprint-1-salas-y-lobby.md §6.
 
-import type { Color, EstadoPartida, Jugador } from './tipos';
+import type { Color, EstadoPartida, ResumenSala } from './tipos';
 
-// Cliente → Servidor
+// --- Errores de sala -------------------------------------------------------
+
+export type CodigoError =
+  | 'CODIGO_INVALIDO'
+  | 'SALA_NO_EXISTE'
+  | 'SALA_EN_CURSO'
+  | 'SALA_LLENA'
+  | 'NOMBRE_INVALIDO'
+  | 'NO_AUTORIZADO'
+  | 'JUGADORES_INSUFICIENTES';
+
+export interface ErrorSala {
+  codigo: CodigoError;
+  mensaje: string;
+}
+
+// --- Respuestas (acknowledgements de Socket.IO) ----------------------------
+
+export type RespuestaCrear =
+  | { ok: true; codigo: string; jugadorId: string; color: Color }
+  | { ok: false; error: ErrorSala };
+
+export type RespuestaUnirse =
+  | { ok: true; codigo: string; jugadorId: string; color: Color }
+  | { ok: false; error: ErrorSala };
+
+export type RespuestaIniciar = { ok: true } | { ok: false; error: ErrorSala };
+
+// --- Eventos ---------------------------------------------------------------
+
+// Cliente → Servidor (los de sala responden por ack; los de juego llegan en Sprint 2/3)
 export interface EventosCliente {
-  crear_partida: (p: { nombre: string }) => void;
-  unirse_partida: (p: { codigo: string; nombre: string }) => void;
-  iniciar_partida: () => void;
+  crear_partida: (p: { nombre: string }, ack: (r: RespuestaCrear) => void) => void;
+  unirse_partida: (p: { codigo: string; nombre: string }, ack: (r: RespuestaUnirse) => void) => void;
+  iniciar_partida: (ack: (r: RespuestaIniciar) => void) => void;
   tirar_dado: () => void;
   mover_ficha: (p: { fichaId: number }) => void;
   pasar_turno: () => void;
@@ -18,7 +48,7 @@ export interface EventosCliente {
 
 // Servidor → Cliente
 export interface EventosServidor {
-  lobby_actualizado: (p: { jugadores: Jugador[] }) => void;
+  lobby_actualizado: (sala: ResumenSala) => void;
   partida_iniciada: (estado: EstadoPartida) => void;
   estado_actualizado: (p: { estado: EstadoPartida; eventos: string[] }) => void;
   partida_terminada: (p: { ganador: Color }) => void;
