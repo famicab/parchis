@@ -15,7 +15,12 @@ export interface ServidorParchis {
  * Construye el servidor (HTTP + Socket.IO) sin arrancar a escuchar.
  * Separado de `index.ts` para poder testearlo en un puerto efímero.
  */
-export function crearServidor(): ServidorParchis {
+export interface OpcionesServidor {
+  /** Inyecta el RNG del dado (tests deterministas). Por defecto, aleatorio real. */
+  lanzarDado?: () => number;
+}
+
+export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis {
   const app = express();
   app.get('/health', (_req, res) => res.json({ ok: true }));
 
@@ -34,7 +39,7 @@ export function crearServidor(): ServidorParchis {
     cors: { origin: clientOrigin ?? '*' },
   });
 
-  const registro = new RegistroSalas();
+  const registro = new RegistroSalas(opciones.lanzarDado);
 
   io.on('connection', (socket) => {
     socket.on('ping', () => socket.emit('pong'));

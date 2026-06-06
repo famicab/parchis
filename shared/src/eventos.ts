@@ -33,16 +33,19 @@ export type RespuestaUnirse =
 
 export type RespuestaIniciar = { ok: true } | { ok: false; error: ErrorSala };
 
+/** Resultado de una acción de juego (tirar/mover/pasar). El estado llega por broadcast. */
+export type RespuestaAccion = { ok: true } | { ok: false; mensaje: string };
+
 // --- Eventos ---------------------------------------------------------------
 
-// Cliente → Servidor (los de sala responden por ack; los de juego llegan en Sprint 2/3)
+// Cliente → Servidor (todas responden por acknowledgement)
 export interface EventosCliente {
   crear_partida: (p: { nombre: string }, ack: (r: RespuestaCrear) => void) => void;
   unirse_partida: (p: { codigo: string; nombre: string }, ack: (r: RespuestaUnirse) => void) => void;
   iniciar_partida: (ack: (r: RespuestaIniciar) => void) => void;
-  tirar_dado: () => void;
-  mover_ficha: (p: { fichaId: number }) => void;
-  pasar_turno: () => void;
+  tirar_dado: (ack: (r: RespuestaAccion) => void) => void;
+  mover_ficha: (p: { fichaId: number }, ack: (r: RespuestaAccion) => void) => void;
+  pasar_turno: (ack: (r: RespuestaAccion) => void) => void;
   ping: () => void;
 }
 
@@ -50,7 +53,7 @@ export interface EventosCliente {
 export interface EventosServidor {
   lobby_actualizado: (sala: ResumenSala) => void;
   partida_iniciada: (estado: EstadoPartida) => void;
-  estado_actualizado: (p: { estado: EstadoPartida; eventos: string[] }) => void;
+  estado_actualizado: (p: { estado: EstadoPartida; eventos: string[]; jugadasLegales: number[] }) => void;
   partida_terminada: (p: { ganador: Color }) => void;
   error: (p: { codigo: string; mensaje: string }) => void;
   pong: () => void;

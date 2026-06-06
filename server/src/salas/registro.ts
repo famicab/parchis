@@ -1,12 +1,15 @@
 import type {
   CodigoError,
+  Color,
   ErrorSala,
+  EstadoPartida,
   RespuestaCrear,
   RespuestaIniciar,
   RespuestaUnirse,
 } from '@parchis/shared';
 import { codigoValido, generarCodigoUnico, normalizarCodigo } from './codigo';
-import { crearEstadoInicial } from '../partida/estadoInicial';
+import { crearEstadoInicial, jugadasLegales, reducir, type Accion } from '../motor';
+import { lanzarDado as lanzarDadoPorDefecto } from '../partida/dado';
 import {
   COLORES,
   crearJugador,
@@ -14,6 +17,7 @@ import {
   primerColorLibre,
   puedeEmpezar,
   validarNombre,
+  type JugadorInterno,
   type SalaInterna,
 } from './sala';
 
@@ -27,6 +31,11 @@ interface Resultado<R> {
   sala?: SalaInterna;
 }
 
+/** Resultado de una acción de juego: estado nuevo a difundir, o error para el ack. */
+export type ResultadoAccion =
+  | { ok: true; sala: SalaInterna; estado: EstadoPartida; eventos: string[]; jugadasLegales: number[] }
+  | { ok: false; mensaje: string };
+
 /**
  * Fuente de verdad de las salas (en memoria). Mantiene un índice inverso
  * socket → sala para resolver desconexiones. Todas las validaciones viven aquí
@@ -35,6 +44,9 @@ interface Resultado<R> {
 export class RegistroSalas {
   private readonly salas = new Map<string, SalaInterna>();
   private readonly porSocket = new Map<string, { codigo: string; jugadorId: string }>();
+
+  // El RNG del dado se inyecta (por defecto el real); permite tests deterministas.
+  constructor(private readonly lanzarDado: () => number = lanzarDadoPorDefecto) {}
 
   buscar(codigo: string): SalaInterna | undefined {
     return this.salas.get(codigo);
@@ -139,5 +151,43 @@ export class RegistroSalas {
       sala.jugadores[0].esHost = true;
     }
     return { sala };
+  }
+
+  // --------------------------- acciones de juego ---------------------------
+
+  tirarDado(socketId: string): ResultadoAccion {
+    return this.aplicarAccion(socketId, (color) => ({ tipo: 'TIRAR_DADO', color, valor: this.lanzarDado() }));
+  }
+
+  moverFicha(socketId: string, fichaId: number): ResultadoAccion {
+    return this.aplicarAccion(socketId, (color) => ({ tipo: 'MOVER_FICHA', color, fichaId }));
+  }
+
+  pasarTurno(socketId: string): ResultadoAccion {
+    return this.aplicarAccion(socketId, (color) => ({ tipo: 'PASAR_TURNO', color }));
+  }
+
+  private resolver(socketId: string): { sala: SalaInterna; jugador: JugadorInterno } | null {
+    const ref = this.porSocket.get(socketId);
+    const sala = ref && this.salas.get(ref.codigo);
+    if (!ref || !sala) return null;
+    const jugador = sala.jugadores.find((j) => j.id === ref.jugadorId);
+    return jugador ? { sala, jugador } : null;
+  }
+
+  /** Aplica una acción de juego con el color del jugador del socket (servidor autoritativo). */
+  private aplicarAccion(socketId: string, construir: (color: Color) => Accion): ResultadoAccion {
+    const ctx = this.resolver(socketId);
+    if (!ctx) return { ok: false, mensaje: 'No estás en una partida.' };
+
+    const { sala, jugador } = ctx;
+    if (!sala.partida) return { ok: false, mensaje: 'No estás en una partida.' };
+
+    const { estado, eventos, error } = reducir(sala.partida, construir(jugador.color));
+    if (error) return { ok: false, mensaje: error };
+
+    sala.partida = estado;
+    sala.actualizadaEn = Date.now();
+    return { ok: true, sala, estado, eventos, jugadasLegales: jugadasLegales(estado) };
   }
 }

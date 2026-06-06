@@ -1,6 +1,6 @@
 import type { Server, Socket } from 'socket.io';
-import type { EventosCliente, EventosServidor } from '@parchis/shared';
-import type { RegistroSalas } from './registro';
+import type { EventosCliente, EventosServidor, RespuestaAccion } from '@parchis/shared';
+import type { RegistroSalas, ResultadoAccion } from './registro';
 import { resumenSala } from './sala';
 
 type IO = Server<EventosCliente, EventosServidor>;
@@ -37,12 +37,31 @@ export function registrarHandlersSala(io: IO, socket: Cliente, registro: Registr
     responder(ack, res);
   });
 
+  // --- acciones de juego: aplican el motor y difunden el estado ---
+  socket.on('tirar_dado', (ack) => responder(ack, difundirAccion(io, registro.tirarDado(socket.id))));
+  socket.on('mover_ficha', (payload, ack) =>
+    responder(ack, difundirAccion(io, registro.moverFicha(socket.id, payload?.fichaId ?? -1))),
+  );
+  socket.on('pasar_turno', (ack) => responder(ack, difundirAccion(io, registro.pasarTurno(socket.id))));
+
   socket.on('disconnect', () => {
     const { sala } = registro.desconectar(socket.id);
     if (sala) {
       io.to(sala.codigo).emit('lobby_actualizado', resumenSala(sala));
     }
   });
+}
+
+/** Difunde el estado a la sala si la acción tuvo éxito y devuelve la respuesta para el ack. */
+function difundirAccion(io: IO, resultado: ResultadoAccion): RespuestaAccion {
+  if (!resultado.ok) return { ok: false, mensaje: resultado.mensaje };
+
+  const { sala, estado, eventos, jugadasLegales } = resultado;
+  io.to(sala.codigo).emit('estado_actualizado', { estado, eventos, jugadasLegales });
+  if (estado.fase === 'TERMINADA' && estado.ganador) {
+    io.to(sala.codigo).emit('partida_terminada', { ganador: estado.ganador });
+  }
+  return { ok: true };
 }
 
 /** Llama al acknowledgement solo si el cliente envió uno (entrada no confiable). */
