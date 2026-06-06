@@ -1,4 +1,5 @@
 export { reducir, jugadasLegales, fichasMovibles, type Accion, type Resultado } from './motor';
+export { elegirFichaAuto } from './autojuego';
 export {
   avanceAPosicion,
   avanceDeFicha,

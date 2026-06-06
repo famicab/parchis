@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io';
 import type { EventosCliente, EventosServidor, RespuestaAccion } from '@parchis/shared';
 import type { RegistroSalas, ResultadoAccion } from './registro';
+import { jugadasLegales } from '../motor';
 import { resumenSala } from './sala';
 
 type IO = Server<EventosCliente, EventosServidor>;
@@ -37,6 +38,26 @@ export function registrarHandlersSala(io: IO, socket: Cliente, registro: Registr
     responder(ack, res);
   });
 
+  // Reconexión: re-vincula el socket y envía un snapshot solo a quien vuelve.
+  socket.on('reconectar', (payload, ack) => {
+    const r = registro.reconectar(socket.id, payload?.codigo, payload?.jugadorId);
+    if (!r.ok) {
+      responder(ack, { ok: false, mensaje: r.mensaje });
+      return;
+    }
+    socket.join(r.sala.codigo);
+    if (r.sala.fase === 'EN_CURSO' && r.sala.partida) {
+      socket.emit('estado_actualizado', {
+        estado: r.sala.partida,
+        eventos: [],
+        jugadasLegales: jugadasLegales(r.sala.partida),
+      });
+    } else {
+      socket.emit('lobby_actualizado', resumenSala(r.sala));
+    }
+    responder(ack, { ok: true, codigo: r.sala.codigo, color: r.color, fase: r.sala.fase });
+  });
+
   // --- acciones de juego: aplican el motor y difunden el estado ---
   socket.on('tirar_dado', (ack) => responder(ack, difundirAccion(io, registro.tirarDado(socket.id))));
   socket.on('mover_ficha', (payload, ack) =>
@@ -45,8 +66,9 @@ export function registrarHandlersSala(io: IO, socket: Cliente, registro: Registr
   socket.on('pasar_turno', (ack) => responder(ack, difundirAccion(io, registro.pasarTurno(socket.id))));
 
   socket.on('disconnect', () => {
-    const { sala } = registro.desconectar(socket.id);
-    if (sala) {
+    const { sala, enPartida } = registro.desconectar(socket.id);
+    // En partida no re-emitimos lobby (la presencia en juego es de PAR-407).
+    if (sala && !enPartida) {
       io.to(sala.codigo).emit('lobby_actualizado', resumenSala(sala));
     }
   });

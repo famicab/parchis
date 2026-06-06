@@ -36,6 +36,11 @@ export type ResultadoAccion =
   | { ok: true; sala: SalaInterna; estado: EstadoPartida; eventos: string[]; jugadasLegales: number[] }
   | { ok: false; mensaje: string };
 
+/** Resultado de una reconexión: la sala y el color para enviar el snapshot. */
+export type ResultadoReconexion =
+  | { ok: true; sala: SalaInterna; color: Color }
+  | { ok: false; mensaje: string };
+
 /**
  * Fuente de verdad de las salas (en memoria). Mantiene un índice inverso
  * socket → sala para resolver desconexiones. Todas las validaciones viven aquí
@@ -127,30 +132,57 @@ export class RegistroSalas {
   }
 
   /**
-   * Procesa la desconexión de un socket: quita al jugador, migra el host si era él
-   * y elimina la sala si queda vacía. Devuelve la sala afectada para re-emitir el lobby.
+   * Procesa la desconexión de un socket.
+   * - En LOBBY: quita al jugador, migra el host si era él y borra la sala vacía.
+   * - En PARTIDA: NO quita; marca al jugador como desconectado para permitir reconectar.
+   * `enPartida` indica el caso para que el handler sepa si re-emitir el lobby.
    */
-  desconectar(socketId: string): { sala: SalaInterna | null } {
+  desconectar(socketId: string): { sala: SalaInterna | null; enPartida: boolean } {
     const ref = this.porSocket.get(socketId);
-    if (!ref) return { sala: null };
+    if (!ref) return { sala: null, enPartida: false };
     this.porSocket.delete(socketId);
 
     const sala = this.salas.get(ref.codigo);
-    if (!sala) return { sala: null };
-
-    sala.jugadores = sala.jugadores.filter((j) => j.id !== ref.jugadorId);
+    if (!sala) return { sala: null, enPartida: false };
     sala.actualizadaEn = Date.now();
 
-    if (sala.jugadores.length === 0) {
-      this.salas.delete(sala.codigo);
-      return { sala: null };
+    if (sala.fase === 'EN_CURSO') {
+      const jugador = sala.jugadores.find((j) => j.id === ref.jugadorId);
+      if (jugador) jugador.conectado = false;
+      return { sala, enPartida: true };
     }
 
+    sala.jugadores = sala.jugadores.filter((j) => j.id !== ref.jugadorId);
+    if (sala.jugadores.length === 0) {
+      this.salas.delete(sala.codigo);
+      return { sala: null, enPartida: false };
+    }
     if (sala.hostId === ref.jugadorId) {
       sala.hostId = sala.jugadores[0].id;
       sala.jugadores[0].esHost = true;
     }
-    return { sala };
+    return { sala, enPartida: false };
+  }
+
+  /**
+   * Re-vincula un socket nuevo a un jugador existente (reconexión). Devuelve la sala
+   * y el color para que el handler envíe el snapshot adecuado (lobby o partida).
+   */
+  reconectar(socketId: string, codigoRaw: unknown, jugadorId: unknown): ResultadoReconexion {
+    if (typeof codigoRaw !== 'string' || typeof jugadorId !== 'string') {
+      return { ok: false, mensaje: 'Datos de reconexión no válidos.' };
+    }
+    const sala = this.salas.get(normalizarCodigo(codigoRaw));
+    if (!sala) return { ok: false, mensaje: 'La sala ya no existe.' };
+
+    const jugador = sala.jugadores.find((j) => j.id === jugadorId);
+    if (!jugador) return { ok: false, mensaje: 'Tu sitio ya no está en la sala.' };
+
+    jugador.conectado = true;
+    jugador.socketId = socketId;
+    this.porSocket.set(socketId, { codigo: sala.codigo, jugadorId });
+    sala.actualizadaEn = Date.now();
+    return { ok: true, sala, color: jugador.color };
   }
 
   // --------------------------- acciones de juego ---------------------------

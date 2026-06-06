@@ -3,7 +3,7 @@
 // rompa la compilación en cliente y servidor a la vez (deseable).
 // Alineado con plans/sprint-1-salas-y-lobby.md §6.
 
-import type { Color, EstadoPartida, ResumenSala } from './tipos';
+import type { Color, EstadoPartida, FaseSala, ResumenSala } from './tipos';
 
 // --- Errores de sala -------------------------------------------------------
 
@@ -36,6 +36,11 @@ export type RespuestaIniciar = { ok: true } | { ok: false; error: ErrorSala };
 /** Resultado de una acción de juego (tirar/mover/pasar). El estado llega por broadcast. */
 export type RespuestaAccion = { ok: true } | { ok: false; mensaje: string };
 
+/** Resultado de reconectar a una sala/partida en curso. El snapshot llega por evento. */
+export type RespuestaReconexion =
+  | { ok: true; codigo: string; color: Color; fase: FaseSala }
+  | { ok: false; mensaje: string };
+
 // --- Eventos ---------------------------------------------------------------
 
 // Cliente → Servidor (todas responden por acknowledgement)
@@ -43,6 +48,7 @@ export interface EventosCliente {
   crear_partida: (p: { nombre: string }, ack: (r: RespuestaCrear) => void) => void;
   unirse_partida: (p: { codigo: string; nombre: string }, ack: (r: RespuestaUnirse) => void) => void;
   iniciar_partida: (ack: (r: RespuestaIniciar) => void) => void;
+  reconectar: (p: { codigo: string; jugadorId: string }, ack: (r: RespuestaReconexion) => void) => void;
   tirar_dado: (ack: (r: RespuestaAccion) => void) => void;
   mover_ficha: (p: { fichaId: number }, ack: (r: RespuestaAccion) => void) => void;
   pasar_turno: (ack: (r: RespuestaAccion) => void) => void;
