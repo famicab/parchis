@@ -1,0 +1,21 @@
+# Render Blueprint — backend (Node + Socket.IO).
+# Render lee este archivo al crear el servicio desde el repo ("Blueprints").
+# WebSockets están habilitados por defecto en los Web Services de Render.
+services:
+  - type: web
+    name: parchis-server
+    runtime: node
+    plan: free
+    rootDir: .
+    # Instala todo el workspace (enlaza @parchis/shared) desde la raíz del repo.
+    buildCommand: npm install
+    # Arranca el workspace del servidor; Render inyecta $PORT, que el server lee.
+    startCommand: npm run start --workspace server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.1
+      # Dominio público del frontend (Vercel). Se rellena tras desplegar el cliente.
+      # Controla el CORS del servidor (origin = CLIENT_ORIGIN).
+      - key: CLIENT_ORIGIN
+        sync: false
