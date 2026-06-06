@@ -1,11 +1,5 @@
-import type { Color, Jugador } from '@parchis/shared';
-
-const COLOR_HEX: Record<Color, string> = {
-  rojo: '#e2362d',
-  azul: '#3366cc',
-  amarillo: '#e6b800',
-  verde: '#2aa54a',
-};
+import type { Jugador } from '@parchis/shared';
+import { COLOR_HEX } from '../tablero/colores';
 
 interface Props {
   jugadores: Jugador[];

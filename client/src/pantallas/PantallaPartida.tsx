@@ -1,18 +1,60 @@
+import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSala } from '../sala/SalaContext';
+import { Tablero } from '../components/Tablero';
+import { Dado } from '../components/Dado';
+import { TurnoActual } from '../components/TurnoActual';
+import { ModalVictoria } from '../components/ModalVictoria';
 
-/** Placeholder de la partida. El tablero y las reglas llegan en los Sprints 2 y 3. */
+/** PAR-305..310: tablero, dado, interacción y victoria. El estado lo dirige el servidor. */
 export function PantallaPartida() {
-  const { estadoPartida } = useSala();
+  const { estadoPartida, jugadasLegales, ganador, miColor, esMiTurno, tirarDado, moverFicha, pasarTurno } = useSala();
+  const navigate = useNavigate();
+
+  // Acceso directo sin partida (refresco): de vuelta al inicio.
+  useEffect(() => {
+    if (!estadoPartida) navigate('/', { replace: true });
+  }, [estadoPartida, navigate]);
+
+  const jugables = useMemo(() => new Set(jugadasLegales), [jugadasLegales]);
+  if (!estadoPartida) return null;
+
+  const puedeTirar = esMiTurno && estadoPartida.dado === null && estadoPartida.bonusPendiente === null;
+  const debeMover = esMiTurno && (estadoPartida.dado !== null || estadoPartida.bonusPendiente !== null);
+  const sinJugadas = debeMover && jugadasLegales.length === 0;
 
   return (
     <section className="partida">
-      <h1>¡Partida iniciada!</h1>
-      <p>El tablero llega en el Sprint 3. 🎲</p>
-      {estadoPartida && (
-        <p>
-          Jugadores: {estadoPartida.colores.join(', ')}. Empieza: {estadoPartida.turnoActual}.
-        </p>
-      )}
+      <Tablero
+        estado={estadoPartida}
+        jugables={jugables}
+        esMiTurno={esMiTurno}
+        miColor={miColor}
+        onMover={moverFicha}
+      />
+
+      <aside className="panel">
+        <TurnoActual estado={estadoPartida} miColor={miColor} />
+        <Dado valor={estadoPartida.dado} puedeTirar={puedeTirar} onTirar={tirarDado} />
+
+        {esMiTurno && estadoPartida.bonusPendiente && (
+          <p className="aviso">Bonificación {estadoPartida.bonusPendiente.tipo}: elige una ficha resaltada.</p>
+        )}
+        {debeMover && jugadasLegales.length > 0 && !estadoPartida.bonusPendiente && (
+          <p className="aviso">Elige una ficha resaltada para mover.</p>
+        )}
+        {sinJugadas && (
+          <div className="aviso">
+            Sin jugadas posibles.{' '}
+            <button type="button" onClick={pasarTurno}>
+              Pasar turno
+            </button>
+          </div>
+        )}
+        {!esMiTurno && <p className="aviso">Esperando al rival…</p>}
+      </aside>
+
+      {ganador && <ModalVictoria ganador={ganador} miColor={miColor} onSalir={() => navigate('/')} />}
     </section>
   );
 }

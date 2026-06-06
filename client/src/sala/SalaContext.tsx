@@ -19,10 +19,16 @@ interface SalaContextValue {
   hostId: string | null;
   fase: FaseSala | null;
   estadoPartida: EstadoPartida | null;
+  jugadasLegales: number[];
+  ganador: Color | null;
   soyHost: boolean;
+  esMiTurno: boolean;
   crearPartida: (nombre: string) => Promise<RespuestaCrear>;
   unirsePartida: (codigo: string, nombre: string) => Promise<RespuestaUnirse>;
   iniciarPartida: () => Promise<RespuestaIniciar>;
+  tirarDado: () => void;
+  moverFicha: (fichaId: number) => void;
+  pasarTurno: () => void;
 }
 
 const SalaContext = createContext<SalaContextValue | null>(null);
@@ -36,6 +42,8 @@ export function SalaProvider({ children }: { children: ReactNode }) {
   const [hostId, setHostId] = useState<string | null>(null);
   const [fase, setFase] = useState<FaseSala | null>(null);
   const [estadoPartida, setEstadoPartida] = useState<EstadoPartida | null>(null);
+  const [jugadasLegales, setJugadasLegales] = useState<number[]>([]);
+  const [ganador, setGanador] = useState<Color | null>(null);
 
   // El estado del lobby/partida lo dirige el servidor (regla del rol).
   useEffect(() => {
@@ -48,12 +56,24 @@ export function SalaProvider({ children }: { children: ReactNode }) {
     const onIniciada = (estado: EstadoPartida) => {
       setFase('EN_CURSO');
       setEstadoPartida(estado);
+      setJugadasLegales([]);
+      setGanador(null);
     };
+    const onActualizado = (p: { estado: EstadoPartida; jugadasLegales: number[] }) => {
+      setEstadoPartida(p.estado);
+      setJugadasLegales(p.jugadasLegales);
+    };
+    const onTerminada = (p: { ganador: Color }) => setGanador(p.ganador);
+
     socket.on('lobby_actualizado', onLobby);
     socket.on('partida_iniciada', onIniciada);
+    socket.on('estado_actualizado', onActualizado);
+    socket.on('partida_terminada', onTerminada);
     return () => {
       socket.off('lobby_actualizado', onLobby);
       socket.off('partida_iniciada', onIniciada);
+      socket.off('estado_actualizado', onActualizado);
+      socket.off('partida_terminada', onTerminada);
     };
   }, []);
 
@@ -91,6 +111,10 @@ export function SalaProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const tirarDado = useCallback(() => socket.emit('tirar_dado', () => {}), []);
+  const moverFicha = useCallback((fichaId: number) => socket.emit('mover_ficha', { fichaId }, () => {}), []);
+  const pasarTurno = useCallback(() => socket.emit('pasar_turno', () => {}), []);
+
   const value = useMemo<SalaContextValue>(
     () => ({
       codigo,
@@ -100,12 +124,34 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       hostId,
       fase,
       estadoPartida,
+      jugadasLegales,
+      ganador,
       soyHost: jugadorId !== null && jugadorId === hostId,
+      esMiTurno: estadoPartida !== null && estadoPartida.turnoActual === miColor,
       crearPartida,
       unirsePartida,
       iniciarPartida,
+      tirarDado,
+      moverFicha,
+      pasarTurno,
     }),
-    [codigo, jugadorId, miColor, jugadores, hostId, fase, estadoPartida, crearPartida, unirsePartida, iniciarPartida],
+    [
+      codigo,
+      jugadorId,
+      miColor,
+      jugadores,
+      hostId,
+      fase,
+      estadoPartida,
+      jugadasLegales,
+      ganador,
+      crearPartida,
+      unirsePartida,
+      iniciarPartida,
+      tirarDado,
+      moverFicha,
+      pasarTurno,
+    ],
   );
 
   return <SalaContext.Provider value={value}>{children}</SalaContext.Provider>;

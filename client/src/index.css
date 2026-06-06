@@ -104,3 +104,92 @@ button:disabled {
 .aviso {
   color: #8889;
 }
+
+/* --- Partida --- */
+.partida {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.tablero {
+  width: min(100%, 22rem);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  background: #fff;
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+
+.ficha.jugable {
+  animation: latido 1s ease-in-out infinite;
+}
+
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.panel {
+  flex: 1 1 10rem;
+  min-width: 9rem;
+}
+
+.dado {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+}
+
+.dado .cara {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border: 2px solid #888;
+  border-radius: 8px;
+}
+
+.jugadores-color {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.jugadores-color li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.jugadores-color .punto {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: #0007;
+  display: grid;
+  place-items: center;
+}
+
+.modal-caja {
+  background: Canvas;
+  color: CanvasText;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  text-align: center;
+}
