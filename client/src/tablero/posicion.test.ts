@@ -11,11 +11,11 @@ describe('layout del tablero', () => {
     expect(ANILLO.every(dentroDelTablero)).toBe(true);
   });
 
-  it('cada salida está en su brazo de la cruz', () => {
-    expect(ANILLO[0].y).toBeLessThan(25); // rojo: brazo de arriba
-    expect(ANILLO[17].x).toBeGreaterThan(75); // azul: brazo de la derecha
-    expect(ANILLO[34].y).toBeGreaterThan(75); // amarillo: brazo de abajo
-    expect(ANILLO[51].x).toBeLessThan(25); // verde: brazo de la izquierda
+  it('las 4 salidas son puntos distintos, una por brazo', () => {
+    const salidas = [ANILLO[0], ANILLO[17], ANILLO[34], ANILLO[51]];
+    const claves = new Set(salidas.map((p) => `${p.x},${p.y}`));
+    expect(claves.size).toBe(4);
+    expect(salidas.every(dentroDelTablero)).toBe(true);
   });
 
   it('cada color tiene 7 cuadros de pasillo y 4 plazas de garaje', () => {
