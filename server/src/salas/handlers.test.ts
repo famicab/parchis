@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  servidor.temporizadores.detenerTodo();
+  servidor.detener();
   servidor.io.close();
   await new Promise<void>((resolve) => servidor.httpServer.close(() => resolve()));
 });

@@ -6,10 +6,14 @@ export const MAX_JUGADORES = 4;
 export const MIN_PARA_EMPEZAR = 2;
 export const LIMITE_NOMBRE = 20;
 
-/** Jugador con datos internos (socketId) que NO se serializan al cliente. */
+/** Jugador con datos internos (socketId, faltas) que NO se serializan al cliente. */
 export interface JugadorInterno extends Jugador {
   socketId: string;
+  ausente: boolean;
+  faltas: number; // turnos auto-jugados consecutivos
 }
+
+export const FALTAS_PARA_AUSENTE = 3;
 
 export interface SalaInterna {
   codigo: string;
@@ -31,7 +35,7 @@ export function crearJugador(
   socketId: string,
   esHost: boolean,
 ): JugadorInterno {
-  return { id: randomUUID(), nombre, color, conectado: true, esHost, socketId };
+  return { id: randomUUID(), nombre, color, conectado: true, esHost, socketId, ausente: false, faltas: 0 };
 }
 
 export function estaLlena(sala: SalaInterna): boolean {
@@ -50,6 +54,7 @@ export function aJugadorPublico(jugador: JugadorInterno): Jugador {
     color: jugador.color,
     conectado: jugador.conectado,
     esHost: jugador.esHost,
+    ausente: jugador.ausente,
   };
 }
 

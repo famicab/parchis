@@ -11,6 +11,8 @@ export interface ServidorParchis {
   io: Server<EventosCliente, EventosServidor>;
   registro: RegistroSalas;
   temporizadores: GestorTemporizadores;
+  /** Detiene timers e intervalo de limpieza (cierre/tests). */
+  detener: () => void;
 }
 
 /**
@@ -22,6 +24,8 @@ export interface OpcionesServidor {
   lanzarDado?: () => number;
   /** Duraciones de los temporizadores de turno (tests con tiempos cortos). */
   temporizadores?: OpcionesTemporizadores;
+  /** Limpieza de salas: intervalo del barrido y margen de caducidad. */
+  limpieza?: { intervaloMs?: number; margenMs?: number };
 }
 
 export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis {
@@ -55,5 +59,18 @@ export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis 
     registrarHandlersSala(io, socket, registro, temporizadores);
   });
 
-  return { httpServer, io, registro, temporizadores };
+  // Barrido periódico de salas terminadas/huérfanas (PAR-405).
+  const intervaloMs = opciones.limpieza?.intervaloMs ?? 60_000;
+  const margenMs = opciones.limpieza?.margenMs ?? 600_000;
+  const limpieza = setInterval(() => {
+    for (const codigo of registro.limpiar(margenMs)) temporizadores.cancelar(codigo);
+  }, intervaloMs);
+  limpieza.unref?.();
+
+  const detener = () => {
+    temporizadores.detenerTodo();
+    clearInterval(limpieza);
+  };
+
+  return { httpServer, io, registro, temporizadores, detener };
 }

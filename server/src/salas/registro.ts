@@ -12,6 +12,7 @@ import { crearEstadoInicial, elegirFichaAuto, jugadasLegales, reducir, type Acci
 import { lanzarDado as lanzarDadoPorDefecto } from '../partida/dado';
 import {
   COLORES,
+  FALTAS_PARA_AUSENTE,
   crearJugador,
   estaLlena,
   primerColorLibre,
@@ -179,6 +180,8 @@ export class RegistroSalas {
     if (!jugador) return { ok: false, mensaje: 'Tu sitio ya no está en la sala.' };
 
     jugador.conectado = true;
+    jugador.ausente = false;
+    jugador.faltas = 0;
     jugador.socketId = socketId;
     this.porSocket.set(socketId, { codigo: sala.codigo, jugadorId });
     sala.actualizadaEn = Date.now();
@@ -211,7 +214,13 @@ export class RegistroSalas {
   private aplicarAccion(socketId: string, construir: (color: Color) => Accion): ResultadoAccion {
     const ctx = this.resolver(socketId);
     if (!ctx || !ctx.sala.partida) return { ok: false, mensaje: 'No estás en una partida.' };
-    return this.aplicarEnSala(ctx.sala, construir(ctx.jugador.color));
+    const resultado = this.aplicarEnSala(ctx.sala, construir(ctx.jugador.color));
+    if (resultado.ok) {
+      // El jugador actuó por sí mismo: deja de estar ausente.
+      ctx.jugador.faltas = 0;
+      ctx.jugador.ausente = false;
+    }
+    return resultado;
   }
 
   private aplicarEnSala(sala: SalaInterna, accion: Accion): ResultadoAccion {
@@ -236,10 +245,40 @@ export class RegistroSalas {
     const estado = sala.partida;
     const color = estado.turnoActual;
     if (estado.dado === null && estado.bonusPendiente === null) {
-      return this.aplicarEnSala(sala, { tipo: 'TIRAR_DADO', color, valor: this.lanzarDado() });
+      // Auto-tirar = el jugador desatendió su turno: cuenta como falta.
+      const resultado = this.aplicarEnSala(sala, { tipo: 'TIRAR_DADO', color, valor: this.lanzarDado() });
+      if (resultado.ok) this.registrarFalta(sala, color);
+      return resultado;
     }
     const fichaId = elegirFichaAuto(estado);
     if (fichaId === null) return this.aplicarEnSala(sala, { tipo: 'PASAR_TURNO', color });
     return this.aplicarEnSala(sala, { tipo: 'MOVER_FICHA', color, fichaId });
+  }
+
+  private registrarFalta(sala: SalaInterna, color: Color): void {
+    const jugador = sala.jugadores.find((j) => j.color === color);
+    if (!jugador) return;
+    jugador.faltas += 1;
+    if (jugador.faltas >= FALTAS_PARA_AUSENTE) jugador.ausente = true;
+  }
+
+  /**
+   * Elimina salas terminadas o huérfanas (sin nadie conectado) cuyo último cambio
+   * sea anterior al margen. Devuelve los códigos eliminados (para cancelar timers).
+   */
+  limpiar(margenMs: number, ahora: number = Date.now()): string[] {
+    const eliminadas: string[] = [];
+    for (const [codigo, sala] of this.salas) {
+      const caducada = ahora - sala.actualizadaEn > margenMs;
+      const huerfana = sala.jugadores.length === 0 || sala.jugadores.every((j) => !j.conectado);
+      if (caducada && (sala.fase === 'TERMINADA' || huerfana)) {
+        this.salas.delete(codigo);
+        eliminadas.push(codigo);
+      }
+    }
+    for (const [socketId, ref] of this.porSocket) {
+      if (eliminadas.includes(ref.codigo)) this.porSocket.delete(socketId);
+    }
+    return eliminadas;
   }
 }

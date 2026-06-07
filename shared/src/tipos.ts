@@ -19,6 +19,8 @@ export interface Jugador {
   color: Color;
   conectado: boolean;
   esHost: boolean;
+  /** Marcado tras varios turnos auto-jugados (AFK). El servidor sigue jugando por él. */
+  ausente?: boolean;
 }
 
 export type FaseSala = 'LOBBY' | 'EN_CURSO' | 'TERMINADA';

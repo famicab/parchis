@@ -31,7 +31,7 @@ async function conServidor(
     await fn({ registro: servidor.registro, crear, nuevo });
   } finally {
     clientes.forEach((c) => c.close());
-    servidor.temporizadores.detenerTodo();
+    servidor.detener();
     servidor.io.close();
     await new Promise<void>((resolve) => servidor.httpServer.close(() => resolve()));
   }
