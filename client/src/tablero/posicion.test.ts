@@ -11,11 +11,11 @@ describe('layout del tablero', () => {
     expect(ANILLO.every(dentroDelTablero)).toBe(true);
   });
 
-  it('las salidas caen en las esquinas, junto a cada casa', () => {
-    expect(ANILLO[0]).toEqual({ x: 15, y: 15 }); // sup-izq (rojo)
-    expect(ANILLO[17]).toEqual({ x: 85, y: 15 }); // sup-der (azul)
-    expect(ANILLO[34]).toEqual({ x: 85, y: 85 }); // inf-der (amarillo)
-    expect(ANILLO[51]).toEqual({ x: 15, y: 85 }); // inf-izq (verde)
+  it('cada salida está en su brazo de la cruz', () => {
+    expect(ANILLO[0].y).toBeLessThan(25); // rojo: brazo de arriba
+    expect(ANILLO[17].x).toBeGreaterThan(75); // azul: brazo de la derecha
+    expect(ANILLO[34].y).toBeGreaterThan(75); // amarillo: brazo de abajo
+    expect(ANILLO[51].x).toBeLessThan(25); // verde: brazo de la izquierda
   });
 
   it('cada color tiene 7 cuadros de pasillo y 4 plazas de garaje', () => {

@@ -1,19 +1,11 @@
 import type { Color } from '@parchis/shared';
 
-// Capa de geometría visual: traduce las posiciones abstractas del motor a
-// coordenadas de un viewBox 0..100.
-// - Anillo cuadrado: las salidas (casillas 0/17/34/51) caen en las 4 ESQUINAS,
-//   justo al lado de la casa de cada color (así, al salir del garaje, la ficha
-//   aparece junto a su casa).
-// - Pasillos: en diagonal desde la casilla de entrada hacia el centro.
-// - Casas (garajes): en las esquinas.
+// Geometría visual del tablero en CRUZ clásica (viewBox 0..100). Las coordenadas
+// se generaron y verificaron con scripts/gen-tablero (cruz gruesa de brazos de 3
+// de ancho: dos carriles de recorrido + pasillo central de color hacia el centro).
+// Las 68 casillas del anillo van en el orden del motor (salidas 0/17/34/51).
 
 export const VIEWBOX = '0 0 100 100';
-
-const MIN = 15;
-const MAX = 85;
-const CENTRO = 50;
-const LADO = MAX - MIN; // 70
 
 export interface Punto {
   x: number;
@@ -22,78 +14,57 @@ export interface Punto {
 
 export const SALIDA: Record<Color, number> = { rojo: 0, azul: 17, amarillo: 34, verde: 51 };
 
-/** 68 casillas en el perímetro de un cuadrado; las salidas (0/17/34/51) en las esquinas. */
-function puntoAnillo(indice: number): Punto {
-  const perimetro = 4 * LADO;
-  const d = (((indice / 68) * perimetro) % perimetro + perimetro) % perimetro;
-  if (d <= LADO) return { x: MIN + d, y: MIN }; // arriba: esquina sup-izq → sup-der
-  if (d <= 2 * LADO) return { x: MAX, y: MIN + (d - LADO) }; // derecha
-  if (d <= 3 * LADO) return { x: MAX - (d - 2 * LADO), y: MAX }; // abajo
-  return { x: MIN, y: MAX - (d - 3 * LADO) }; // izquierda
-}
-
-export const ANILLO: ReadonlyArray<Punto> = Array.from({ length: 68 }, (_, i) => puntoAnillo(i));
-
-// La ficha entra al pasillo 5 casillas antes de su salida (avance 63 del motor).
-function casillaEntrada(color: Color): Punto {
-  return puntoAnillo((SALIDA[color] + 63) % 68);
-}
-
-function pasilloDe(color: Color): Punto[] {
-  const e = casillaEntrada(color);
-  return Array.from({ length: 7 }, (_, k) => ({
-    x: e.x + (CENTRO - e.x) * ((k + 1) / 8),
-    y: e.y + (CENTRO - e.y) * ((k + 1) / 8),
-  }));
-}
+export const ANILLO: ReadonlyArray<Punto> = [
+  { x: 55.26, y: 13.16 }, { x: 55.26, y: 18.42 }, { x: 55.26, y: 23.68 }, { x: 55.26, y: 28.95 },
+  { x: 55.26, y: 34.21 }, { x: 55.26, y: 39.47 }, { x: 60.53, y: 44.74 }, { x: 65.79, y: 44.74 },
+  { x: 71.05, y: 44.74 }, { x: 76.32, y: 44.74 }, { x: 81.58, y: 44.74 }, { x: 86.84, y: 44.74 },
+  { x: 92.11, y: 44.74 }, { x: 97.37, y: 44.74 }, { x: 97.37, y: 50 }, { x: 97.37, y: 55.26 },
+  { x: 92.11, y: 55.26 }, { x: 86.84, y: 55.26 }, { x: 81.58, y: 55.26 }, { x: 76.32, y: 55.26 },
+  { x: 71.05, y: 55.26 }, { x: 65.79, y: 55.26 }, { x: 60.53, y: 55.26 }, { x: 55.26, y: 60.53 },
+  { x: 55.26, y: 65.79 }, { x: 55.26, y: 71.05 }, { x: 55.26, y: 76.32 }, { x: 55.26, y: 81.58 },
+  { x: 55.26, y: 86.84 }, { x: 55.26, y: 92.11 }, { x: 55.26, y: 97.37 }, { x: 50, y: 97.37 },
+  { x: 44.74, y: 97.37 }, { x: 44.74, y: 92.11 }, { x: 44.74, y: 86.84 }, { x: 44.74, y: 81.58 },
+  { x: 44.74, y: 76.32 }, { x: 44.74, y: 71.05 }, { x: 44.74, y: 65.79 }, { x: 44.74, y: 60.53 },
+  { x: 39.47, y: 55.26 }, { x: 34.21, y: 55.26 }, { x: 28.95, y: 55.26 }, { x: 23.68, y: 55.26 },
+  { x: 18.42, y: 55.26 }, { x: 13.16, y: 55.26 }, { x: 7.89, y: 55.26 }, { x: 2.63, y: 55.26 },
+  { x: 2.63, y: 50 }, { x: 2.63, y: 44.74 }, { x: 7.89, y: 44.74 }, { x: 13.16, y: 44.74 },
+  { x: 18.42, y: 44.74 }, { x: 23.68, y: 44.74 }, { x: 28.95, y: 44.74 }, { x: 34.21, y: 44.74 },
+  { x: 39.47, y: 44.74 }, { x: 44.74, y: 39.47 }, { x: 44.74, y: 34.21 }, { x: 44.74, y: 28.95 },
+  { x: 44.74, y: 23.68 }, { x: 44.74, y: 18.42 }, { x: 44.74, y: 13.16 }, { x: 44.74, y: 7.89 },
+  { x: 44.74, y: 2.63 }, { x: 50, y: 2.63 }, { x: 55.26, y: 2.63 }, { x: 55.26, y: 7.89 },
+];
 
 export const PASILLO: Record<Color, Punto[]> = {
-  rojo: pasilloDe('rojo'),
-  azul: pasilloDe('azul'),
-  amarillo: pasilloDe('amarillo'),
-  verde: pasilloDe('verde'),
+  rojo: [
+    { x: 50, y: 7.89 }, { x: 50, y: 13.16 }, { x: 50, y: 18.42 }, { x: 50, y: 23.68 },
+    { x: 50, y: 28.95 }, { x: 50, y: 34.21 }, { x: 50, y: 39.47 },
+  ],
+  azul: [
+    { x: 92.11, y: 50 }, { x: 86.84, y: 50 }, { x: 81.58, y: 50 }, { x: 76.32, y: 50 },
+    { x: 71.05, y: 50 }, { x: 65.79, y: 50 }, { x: 60.53, y: 50 },
+  ],
+  amarillo: [
+    { x: 50, y: 92.11 }, { x: 50, y: 86.84 }, { x: 50, y: 81.58 }, { x: 50, y: 76.32 },
+    { x: 50, y: 71.05 }, { x: 50, y: 65.79 }, { x: 50, y: 60.53 },
+  ],
+  verde: [
+    { x: 7.89, y: 50 }, { x: 13.16, y: 50 }, { x: 18.42, y: 50 }, { x: 23.68, y: 50 },
+    { x: 28.95, y: 50 }, { x: 34.21, y: 50 }, { x: 39.47, y: 50 },
+  ],
 };
-
-// Meta en el centro, desplazada un poco hacia la esquina de cada color para no solaparse.
-function metaDe(color: Color): Punto {
-  const esquina = puntoAnillo(SALIDA[color]);
-  return {
-    x: CENTRO + (esquina.x - CENTRO) * 0.1,
-    y: CENTRO + (esquina.y - CENTRO) * 0.1,
-  };
-}
 
 export const META: Record<Color, Punto> = {
-  rojo: metaDe('rojo'),
-  azul: metaDe('azul'),
-  amarillo: metaDe('amarillo'),
-  verde: metaDe('verde'),
+  rojo: { x: 50, y: 46.21 },
+  azul: { x: 53.79, y: 50 },
+  amarillo: { x: 50, y: 53.79 },
+  verde: { x: 46.21, y: 50 },
 };
-
-// Casas (garajes) en las esquinas, junto a cada salida.
-const GARAJE_CENTRO: Record<Color, Punto> = {
-  rojo: { x: 9, y: 9 },
-  azul: { x: 91, y: 9 },
-  amarillo: { x: 91, y: 91 },
-  verde: { x: 9, y: 91 },
-};
-
-function garajeDe(color: Color): Punto[] {
-  const c = GARAJE_CENTRO[color];
-  const o = 4;
-  return [
-    { x: c.x - o, y: c.y - o },
-    { x: c.x + o, y: c.y - o },
-    { x: c.x - o, y: c.y + o },
-    { x: c.x + o, y: c.y + o },
-  ];
-}
 
 export const GARAJE: Record<Color, Punto[]> = {
-  rojo: garajeDe('rojo'),
-  azul: garajeDe('azul'),
-  amarillo: garajeDe('amarillo'),
-  verde: garajeDe('verde'),
+  rojo: [{ x: 83, y: 7 }, { x: 93, y: 7 }, { x: 83, y: 17 }, { x: 93, y: 17 }],
+  azul: [{ x: 83, y: 83 }, { x: 93, y: 83 }, { x: 83, y: 93 }, { x: 93, y: 93 }],
+  amarillo: [{ x: 7, y: 83 }, { x: 17, y: 83 }, { x: 7, y: 93 }, { x: 17, y: 93 }],
+  verde: [{ x: 7, y: 7 }, { x: 17, y: 7 }, { x: 7, y: 17 }, { x: 17, y: 17 }],
 };
 
 // Espejo de motor/tablero (solo para resaltar seguros visualmente).
