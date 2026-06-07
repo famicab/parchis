@@ -61,15 +61,16 @@ export function registrarHandlersSala(
       return;
     }
     socket.join(r.sala.codigo);
+    // Snapshot del tablero solo a quien vuelve (si hay partida)...
     if (r.sala.fase === 'EN_CURSO' && r.sala.partida) {
       socket.emit('estado_actualizado', {
         estado: r.sala.partida,
         eventos: [],
         jugadasLegales: jugadasLegales(r.sala.partida),
       });
-    } else {
-      socket.emit('lobby_actualizado', resumenSala(r.sala));
     }
+    // ...y presencia a toda la sala (incluye el snapshot de lobby para el que vuelve).
+    io.to(r.sala.codigo).emit('lobby_actualizado', resumenSala(r.sala));
     responder(ack, { ok: true, codigo: r.sala.codigo, color: r.color, fase: r.sala.fase });
   });
 
@@ -81,9 +82,9 @@ export function registrarHandlersSala(
   socket.on('pasar_turno', (ack) => responder(ack, procesar(registro.pasarTurno(socket.id))));
 
   socket.on('disconnect', () => {
-    const { sala, enPartida } = registro.desconectar(socket.id);
-    // En partida no re-emitimos lobby (la presencia en juego es de PAR-407).
-    if (sala && !enPartida) {
+    const { sala } = registro.desconectar(socket.id);
+    // Difunde la presencia (en lobby quita al jugador; en partida lo marca desconectado).
+    if (sala) {
       io.to(sala.codigo).emit('lobby_actualizado', resumenSala(sala));
     }
   });

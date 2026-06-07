@@ -105,6 +105,12 @@ button:disabled {
   color: #8889;
 }
 
+.cuenta-atras {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
+
 /* --- Partida --- */
 .partida {
   display: flex;

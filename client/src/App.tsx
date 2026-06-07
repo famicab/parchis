@@ -1,6 +1,7 @@
 import { Routes, Route, useParams } from 'react-router-dom';
 import { useConexion } from './hooks/useConexion';
 import { IndicadorConexion } from './components/IndicadorConexion';
+import { GuardiaSesion } from './sala/GuardiaSesion';
 import { PantallaInicio } from './pantallas/PantallaInicio';
 import { PantallaLobby } from './pantallas/PantallaLobby';
 import { PantallaPartida } from './pantallas/PantallaPartida';
@@ -15,6 +16,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <GuardiaSesion />
       <header className="cabecera">
         <span className="marca">Parchís</span>
         <IndicadorConexion conectado={conectado} />

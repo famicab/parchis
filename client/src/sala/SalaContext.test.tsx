@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import type { ResumenSala } from '@parchis/shared';
@@ -14,7 +15,12 @@ const { fakeSocket, fire } = vi.hoisted(() => {
       off(evento: string, cb: (...a: unknown[]) => void) {
         handlers[evento]?.delete(cb);
       },
-      emit() {},
+      emit(evento: string, ...args: unknown[]) {
+        const ack = args[args.length - 1];
+        if (evento === 'reconectar' && typeof ack === 'function') {
+          (ack as (r: unknown) => void)({ ok: true, codigo: 'ABCDEF', color: 'rojo', fase: 'LOBBY' });
+        }
+      },
     },
     fire(evento: string, payload: unknown) {
       handlers[evento]?.forEach((cb) => cb(payload));
@@ -62,6 +68,26 @@ describe('SalaContext', () => {
     expect(screen.getByTestId('codigo').textContent).toBe('ABCDEF');
     expect(screen.getByTestId('num').textContent).toBe('2');
     expect(screen.getByTestId('fase').textContent).toBe('LOBBY');
+  });
+
+  it('reconectarSesion restaura la identidad con la respuesta del servidor', async () => {
+    function Reconectador() {
+      const { codigo, miColor, reconectarSesion } = useSala();
+      useEffect(() => {
+        reconectarSesion('ABCDEF', 'p1');
+      }, [reconectarSesion]);
+      return (
+        <span data-testid="datos">
+          {codigo ?? '-'}/{miColor ?? '-'}
+        </span>
+      );
+    }
+    render(
+      <SalaProvider>
+        <Reconectador />
+      </SalaProvider>,
+    );
+    expect((await screen.findByTestId('datos')).textContent).toBe('ABCDEF/rojo');
   });
 
   it('lanza si se usa useSala fuera del provider', () => {

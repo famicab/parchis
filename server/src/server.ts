@@ -5,6 +5,7 @@ import type { EventosCliente, EventosServidor } from '@parchis/shared';
 import { RegistroSalas } from './salas/registro';
 import { registrarHandlersSala, difundirEstado } from './salas/handlers';
 import { GestorTemporizadores, type OpcionesTemporizadores } from './salas/temporizadores';
+import { resumenSala } from './salas/sala';
 
 export interface ServidorParchis {
   httpServer: HttpServer;
@@ -50,7 +51,11 @@ export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis 
   const registro = new RegistroSalas(opciones.lanzarDado);
   const temporizadores = new GestorTemporizadores(
     registro,
-    (resultado) => difundirEstado(io, resultado),
+    (resultado) => {
+      difundirEstado(io, resultado);
+      // Tras auto-jugar, la presencia puede cambiar (ausente): refréscala.
+      if (resultado.ok) io.to(resultado.sala.codigo).emit('lobby_actualizado', resumenSala(resultado.sala));
+    },
     opciones.temporizadores,
   );
 

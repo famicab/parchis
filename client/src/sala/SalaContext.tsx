@@ -6,6 +6,7 @@ import type {
   Jugador,
   RespuestaCrear,
   RespuestaIniciar,
+  RespuestaReconexion,
   RespuestaUnirse,
   ResumenSala,
 } from '@parchis/shared';
@@ -21,11 +22,13 @@ interface SalaContextValue {
   estadoPartida: EstadoPartida | null;
   jugadasLegales: number[];
   ganador: Color | null;
+  turnoDesde: number; // timestamp del último cambio de estado (para la cuenta atrás)
   soyHost: boolean;
   esMiTurno: boolean;
   crearPartida: (nombre: string) => Promise<RespuestaCrear>;
   unirsePartida: (codigo: string, nombre: string) => Promise<RespuestaUnirse>;
   iniciarPartida: () => Promise<RespuestaIniciar>;
+  reconectarSesion: (codigo: string, jugadorId: string) => Promise<RespuestaReconexion>;
   tirarDado: () => void;
   moverFicha: (fichaId: number) => void;
   pasarTurno: () => void;
@@ -44,6 +47,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
   const [estadoPartida, setEstadoPartida] = useState<EstadoPartida | null>(null);
   const [jugadasLegales, setJugadasLegales] = useState<number[]>([]);
   const [ganador, setGanador] = useState<Color | null>(null);
+  const [turnoDesde, setTurnoDesde] = useState<number>(Date.now());
 
   // El estado del lobby/partida lo dirige el servidor (regla del rol).
   useEffect(() => {
@@ -58,10 +62,12 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       setEstadoPartida(estado);
       setJugadasLegales([]);
       setGanador(null);
+      setTurnoDesde(Date.now());
     };
     const onActualizado = (p: { estado: EstadoPartida; jugadasLegales: number[] }) => {
       setEstadoPartida(p.estado);
       setJugadasLegales(p.jugadasLegales);
+      setTurnoDesde(Date.now());
     };
     const onTerminada = (p: { ganador: Color }) => setGanador(p.ganador);
 
@@ -111,6 +117,22 @@ export function SalaProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const reconectarSesion = useCallback(
+    (cod: string, jid: string) =>
+      new Promise<RespuestaReconexion>((resolve) => {
+        socket.emit('reconectar', { codigo: cod, jugadorId: jid }, (r) => {
+          if (r.ok) {
+            setCodigo(cod);
+            setJugadorId(jid);
+            setMiColor(r.color);
+            setFase(r.fase);
+          }
+          resolve(r);
+        });
+      }),
+    [],
+  );
+
   const tirarDado = useCallback(() => socket.emit('tirar_dado', () => {}), []);
   const moverFicha = useCallback((fichaId: number) => socket.emit('mover_ficha', { fichaId }, () => {}), []);
   const pasarTurno = useCallback(() => socket.emit('pasar_turno', () => {}), []);
@@ -126,11 +148,13 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       estadoPartida,
       jugadasLegales,
       ganador,
+      turnoDesde,
       soyHost: jugadorId !== null && jugadorId === hostId,
       esMiTurno: estadoPartida !== null && estadoPartida.turnoActual === miColor,
       crearPartida,
       unirsePartida,
       iniciarPartida,
+      reconectarSesion,
       tirarDado,
       moverFicha,
       pasarTurno,
@@ -145,9 +169,11 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       estadoPartida,
       jugadasLegales,
       ganador,
+      turnoDesde,
       crearPartida,
       unirsePartida,
       iniciarPartida,
+      reconectarSesion,
       tirarDado,
       moverFicha,
       pasarTurno,

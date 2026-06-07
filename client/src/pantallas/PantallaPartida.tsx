@@ -4,11 +4,13 @@ import { useSala } from '../sala/SalaContext';
 import { Tablero } from '../components/Tablero';
 import { Dado } from '../components/Dado';
 import { TurnoActual } from '../components/TurnoActual';
+import { Temporizador } from '../components/Temporizador';
 import { ModalVictoria } from '../components/ModalVictoria';
 
 /** PAR-305..310: tablero, dado, interacción y victoria. El estado lo dirige el servidor. */
 export function PantallaPartida() {
-  const { estadoPartida, jugadasLegales, ganador, miColor, esMiTurno, tirarDado, moverFicha, pasarTurno } = useSala();
+  const { estadoPartida, jugadasLegales, ganador, miColor, esMiTurno, jugadores, turnoDesde, tirarDado, moverFicha, pasarTurno } =
+    useSala();
   const navigate = useNavigate();
 
   // Acceso directo sin partida (refresco): de vuelta al inicio.
@@ -34,7 +36,8 @@ export function PantallaPartida() {
       />
 
       <aside className="panel">
-        <TurnoActual estado={estadoPartida} miColor={miColor} />
+        <TurnoActual estado={estadoPartida} miColor={miColor} jugadores={jugadores} />
+        {estadoPartida.fase === 'EN_CURSO' && <Temporizador estado={estadoPartida} desde={turnoDesde} />}
         <Dado valor={estadoPartida.dado} puedeTirar={puedeTirar} onTirar={tirarDado} />
 
         {esMiTurno && estadoPartida.bonusPendiente && (
