@@ -5,21 +5,35 @@ import { Tablero } from '../components/Tablero';
 import { Dado } from '../components/Dado';
 import { TurnoActual } from '../components/TurnoActual';
 import { Temporizador } from '../components/Temporizador';
+import { Avisos } from '../components/Avisos';
 import { ModalVictoria } from '../components/ModalVictoria';
 
 /** PAR-305..310: tablero, dado, interacción y victoria. El estado lo dirige el servidor. */
 export function PantallaPartida() {
-  const { estadoPartida, jugadasLegales, ganador, miColor, esMiTurno, jugadores, turnoDesde, tirarDado, moverFicha, pasarTurno } =
-    useSala();
+  const {
+    estadoPartida,
+    jugadasLegales,
+    ganador,
+    miColor,
+    esMiTurno,
+    jugadores,
+    turnoDesde,
+    ultimosEventos,
+    tirarDado,
+    moverFicha,
+    pasarTurno,
+  } = useSala();
   const navigate = useNavigate();
 
-  // Acceso directo sin partida (refresco): de vuelta al inicio.
+  // Sin partida (p. ej. reconexión en curso): esperar el snapshot; si no llega, volver.
   useEffect(() => {
-    if (!estadoPartida) navigate('/', { replace: true });
+    if (estadoPartida) return;
+    const id = setTimeout(() => navigate('/', { replace: true }), 4000);
+    return () => clearTimeout(id);
   }, [estadoPartida, navigate]);
 
   const jugables = useMemo(() => new Set(jugadasLegales), [jugadasLegales]);
-  if (!estadoPartida) return null;
+  if (!estadoPartida) return <p className="cargando">Cargando partida…</p>;
 
   const puedeTirar = esMiTurno && estadoPartida.dado === null && estadoPartida.bonusPendiente === null;
   const debeMover = esMiTurno && (estadoPartida.dado !== null || estadoPartida.bonusPendiente !== null);
@@ -57,6 +71,7 @@ export function PantallaPartida() {
         {!esMiTurno && <p className="aviso">Esperando al rival…</p>}
       </aside>
 
+      <Avisos eventos={ultimosEventos} trigger={turnoDesde} />
       {ganador && <ModalVictoria ganador={ganador} miColor={miColor} onSalir={() => navigate('/')} />}
     </section>
   );

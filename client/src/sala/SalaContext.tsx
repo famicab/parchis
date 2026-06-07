@@ -22,6 +22,7 @@ interface SalaContextValue {
   estadoPartida: EstadoPartida | null;
   jugadasLegales: number[];
   ganador: Color | null;
+  ultimosEventos: string[]; // eventos del último cambio (para los avisos)
   turnoDesde: number; // timestamp del último cambio de estado (para la cuenta atrás)
   soyHost: boolean;
   esMiTurno: boolean;
@@ -47,6 +48,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
   const [estadoPartida, setEstadoPartida] = useState<EstadoPartida | null>(null);
   const [jugadasLegales, setJugadasLegales] = useState<number[]>([]);
   const [ganador, setGanador] = useState<Color | null>(null);
+  const [ultimosEventos, setUltimosEventos] = useState<string[]>([]);
   const [turnoDesde, setTurnoDesde] = useState<number>(Date.now());
 
   // El estado del lobby/partida lo dirige el servidor (regla del rol).
@@ -64,9 +66,10 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       setGanador(null);
       setTurnoDesde(Date.now());
     };
-    const onActualizado = (p: { estado: EstadoPartida; jugadasLegales: number[] }) => {
+    const onActualizado = (p: { estado: EstadoPartida; jugadasLegales: number[]; eventos: string[] }) => {
       setEstadoPartida(p.estado);
       setJugadasLegales(p.jugadasLegales);
+      setUltimosEventos(p.eventos);
       setTurnoDesde(Date.now());
     };
     const onTerminada = (p: { ganador: Color }) => setGanador(p.ganador);
@@ -148,6 +151,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       estadoPartida,
       jugadasLegales,
       ganador,
+      ultimosEventos,
       turnoDesde,
       soyHost: jugadorId !== null && jugadorId === hostId,
       esMiTurno: estadoPartida !== null && estadoPartida.turnoActual === miColor,
@@ -169,6 +173,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       estadoPartida,
       jugadasLegales,
       ganador,
+      ultimosEventos,
       turnoDesde,
       crearPartida,
       unirsePartida,

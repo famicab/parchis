@@ -111,21 +111,45 @@ button:disabled {
   margin: 0.25rem 0;
 }
 
-/* --- Partida --- */
+/* --- Partida (mobile-first) --- */
 .partida {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
 .tablero {
-  width: min(100%, 22rem);
+  width: min(92vw, 26rem);
   aspect-ratio: 1 / 1;
   height: auto;
   background: #fff;
   border-radius: 8px;
   touch-action: manipulation;
+}
+
+@media (min-width: 720px) {
+  .app {
+    max-width: 48rem;
+  }
+  .partida {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .tablero {
+    width: min(60vh, 30rem);
+  }
+  .panel {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.ficha {
+  transition:
+    cx 0.3s ease,
+    cy 0.3s ease;
 }
 
 .ficha.jugable {
@@ -143,8 +167,44 @@ button:disabled {
 }
 
 .panel {
-  flex: 1 1 10rem;
-  min-width: 9rem;
+  width: min(92vw, 26rem);
+}
+
+@media (min-width: 720px) {
+  .panel {
+    width: 14rem;
+  }
+}
+
+.cargando {
+  text-align: center;
+  padding: 2rem;
+  color: #8889;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  background: #111e;
+  color: #fff;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  z-index: 20;
+  animation: aparece 0.2s ease;
+}
+
+@keyframes aparece {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .dado {
