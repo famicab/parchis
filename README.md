@@ -2,7 +2,7 @@
 
 Juego de **Parchís** multijugador en tiempo real para jugar con amigos desde el navegador. Partidas privadas mediante código de invitación, de 2 a 4 jugadores, compatible con móvil y escritorio.
 
-> Estado: **Sprint 0 completado** — esqueleto cliente/servidor conectado por WebSocket. En desarrollo activo.
+> Estado: **v1.0 (MVP)** — juego completo y desplegado: lobby, motor de reglas, tablero en tiempo real, reconexión y temporizadores anti-AFK.
 
 ## Características (objetivo del MVP)
 
@@ -89,6 +89,12 @@ componente (jsdom + Testing Library).
 
 El servidor lee `PORT` del entorno y restringe CORS con `CLIENT_ORIGIN`. El
 cliente recibe la URL del backend en build mediante `VITE_SERVER_URL`.
+
+## Limitaciones conocidas
+
+- **Estado en memoria:** las partidas viven en la memoria del servidor. Si el backend se reinicia (un nuevo despliegue, o el *sleep* del plan gratuito), **las partidas en curso se pierden** y la reconexión devuelve al inicio. Aceptable para partidas cortas con amigos; persistir el estado queda como mejora futura.
+- **Arranque en frío:** en el plan gratuito de Render el backend se duerme tras un rato de inactividad; la primera conexión puede tardar ~30–60 s en despertar.
+- **Tablero:** el dibujo en cruz es funcional pero está pendiente de pulido visual.
 
 ## Licencia
 

@@ -6,6 +6,7 @@ import { RegistroSalas } from './salas/registro';
 import { registrarHandlersSala, difundirEstado } from './salas/handlers';
 import { GestorTemporizadores, type OpcionesTemporizadores } from './salas/temporizadores';
 import { resumenSala } from './salas/sala';
+import { log } from './log';
 
 export interface ServidorParchis {
   httpServer: HttpServer;
@@ -37,11 +38,9 @@ export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis 
 
   const clientOrigin = process.env.CLIENT_ORIGIN;
   if (!clientOrigin && process.env.NODE_ENV === 'production') {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[seguridad] CLIENT_ORIGIN no definido en producción: el CORS aceptará cualquier origen. ' +
-        'Define CLIENT_ORIGIN con el dominio del frontend para restringirlo.',
-    );
+    log.warn('CLIENT_ORIGIN no definido en producción: el CORS aceptará cualquier origen', {
+      sugerencia: 'Define CLIENT_ORIGIN con el dominio del frontend para restringirlo.',
+    });
   }
 
   const io = new Server<EventosCliente, EventosServidor>(httpServer, {
@@ -61,6 +60,7 @@ export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis 
 
   io.on('connection', (socket) => {
     socket.on('ping', () => socket.emit('pong'));
+    socket.on('error', (err) => log.error('error de socket', { id: socket.id, error: String(err) }));
     registrarHandlersSala(io, socket, registro, temporizadores);
   });
 
