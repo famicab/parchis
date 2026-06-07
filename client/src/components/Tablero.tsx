@@ -1,5 +1,5 @@
 import type { Color, EstadoPartida } from '@parchis/shared';
-import { ANILLO, GARAJE, META, PASILLO, SEGUROS, VIEWBOX } from '../tablero/layout';
+import { ANILLO, GARAJE, META, PASILLO, SALIDA, SEGUROS, VIEWBOX } from '../tablero/layout';
 import { coordenadaFicha } from '../tablero/posicion';
 import { COLOR_HEX } from '../tablero/colores';
 import { Ficha } from './Ficha';
@@ -14,9 +14,22 @@ interface Props {
 
 /** Render del tablero: anillo, seguros, pasillos/garajes/meta por color y las fichas. */
 export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props) {
+  const colorSalida = new Map<number, Color>();
+  estado.colores.forEach((color) => colorSalida.set(SALIDA[color], color));
+
   return (
     <svg viewBox={VIEWBOX} className="tablero" role="img" aria-label="Tablero de parchís">
       <rect x={0} y={0} width={100} height={100} rx={3} fill="#faf7ee" />
+
+      {/* Casas (garajes) coloreadas en las esquinas */}
+      {estado.colores.map((color) => {
+        const g = GARAJE[color];
+        const cx = (g[0].x + g[3].x) / 2;
+        const cy = (g[0].y + g[3].y) / 2;
+        return (
+          <rect key={`casa-${color}`} x={cx - 11} y={cy - 11} width={22} height={22} rx={3} fill={COLOR_HEX[color]} opacity={0.12} />
+        );
+      })}
 
       {ANILLO.map((p, i) => (
         <rect
@@ -26,7 +39,7 @@ export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props
           width={4}
           height={4}
           rx={0.8}
-          fill={SEGUROS.includes(i) ? '#d8d2c0' : '#fff'}
+          fill={colorSalida.has(i) ? COLOR_HEX[colorSalida.get(i)!] : SEGUROS.includes(i) ? '#d8d2c0' : '#fff'}
           stroke="#c3bca8"
           strokeWidth={0.25}
         />

@@ -1,11 +1,33 @@
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   color-scheme: light dark;
+
+  --bg: #f4f1ea;
+  --fg: #1c1b18;
+  --surface: #ffffff;
+  --muted: #6b6860;
+  --border: #d9d4c7;
+  --accent: #2a6f4a;
+  --accent-fg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1916;
+    --fg: #efece4;
+    --surface: #26241f;
+    --muted: #a39e92;
+    --border: #3a3730;
+    --accent: #3a9c68;
+    --accent-fg: #0c130e;
+  }
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .app {
@@ -18,12 +40,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #8884;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .marca {
   font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 main {
@@ -43,6 +66,10 @@ main {
   padding: 0.6rem;
   font-size: 1rem;
   margin-top: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--fg);
 }
 
 .bloque {
@@ -55,6 +82,15 @@ button {
   padding: 0.6rem 1rem;
   font-size: 1rem;
   cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 button:disabled {
@@ -64,8 +100,20 @@ button:disabled {
 
 .separador {
   text-align: center;
-  color: #8889;
+  color: var(--muted);
   margin: 1rem 0;
+}
+
+.inicio,
+.lobby {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.inicio h1 {
+  margin-top: 0;
 }
 
 .error {
@@ -102,7 +150,7 @@ button:disabled {
 }
 
 .aviso {
-  color: #8889;
+  color: var(--muted);
 }
 
 .cuenta-atras {
@@ -253,8 +301,9 @@ button:disabled {
 }
 
 .modal-caja {
-  background: Canvas;
-  color: CanvasText;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
   padding: 1.5rem 2rem;
   border-radius: 12px;
   text-align: center;
