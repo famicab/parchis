@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io';
 import type { EventosCliente, EventosServidor, RespuestaAccion } from '@parchis/shared';
 import type { RegistroSalas, ResultadoAccion } from './registro';
+import type { GestorTemporizadores } from './temporizadores';
 import { jugadasLegales } from '../motor';
 import { resumenSala } from './sala';
 
@@ -11,7 +12,20 @@ type Cliente = Socket<EventosCliente, EventosServidor>;
  * Cablea los eventos de sala de un socket contra el registro autoritativo.
  * El registro decide y valida; aquí solo traducimos socket ↔ registro y emitimos.
  */
-export function registrarHandlersSala(io: IO, socket: Cliente, registro: RegistroSalas): void {
+export function registrarHandlersSala(
+  io: IO,
+  socket: Cliente,
+  registro: RegistroSalas,
+  temporizadores: GestorTemporizadores,
+): void {
+  // Difunde el resultado de una acción de juego y re-arma el temporizador de turno.
+  const procesar = (resultado: ResultadoAccion): RespuestaAccion => {
+    if (!resultado.ok) return { ok: false, mensaje: resultado.mensaje };
+    difundirEstado(io, resultado);
+    temporizadores.reprogramar(resultado.sala.codigo);
+    return { ok: true };
+  };
+
   socket.on('crear_partida', (payload, ack) => {
     const { res, sala } = registro.crear(payload?.nombre, socket.id);
     if (res.ok && sala) {
@@ -34,6 +48,7 @@ export function registrarHandlersSala(io: IO, socket: Cliente, registro: Registr
     const { res, sala } = registro.iniciar(socket.id);
     if (res.ok && sala?.partida) {
       io.to(sala.codigo).emit('partida_iniciada', sala.partida);
+      temporizadores.reprogramar(sala.codigo); // arranca el reloj del primer turno
     }
     responder(ack, res);
   });
@@ -58,12 +73,12 @@ export function registrarHandlersSala(io: IO, socket: Cliente, registro: Registr
     responder(ack, { ok: true, codigo: r.sala.codigo, color: r.color, fase: r.sala.fase });
   });
 
-  // --- acciones de juego: aplican el motor y difunden el estado ---
-  socket.on('tirar_dado', (ack) => responder(ack, difundirAccion(io, registro.tirarDado(socket.id))));
+  // --- acciones de juego: aplican el motor, difunden el estado y re-arman el reloj ---
+  socket.on('tirar_dado', (ack) => responder(ack, procesar(registro.tirarDado(socket.id))));
   socket.on('mover_ficha', (payload, ack) =>
-    responder(ack, difundirAccion(io, registro.moverFicha(socket.id, payload?.fichaId ?? -1))),
+    responder(ack, procesar(registro.moverFicha(socket.id, payload?.fichaId ?? -1))),
   );
-  socket.on('pasar_turno', (ack) => responder(ack, difundirAccion(io, registro.pasarTurno(socket.id))));
+  socket.on('pasar_turno', (ack) => responder(ack, procesar(registro.pasarTurno(socket.id))));
 
   socket.on('disconnect', () => {
     const { sala, enPartida } = registro.desconectar(socket.id);
@@ -74,16 +89,14 @@ export function registrarHandlersSala(io: IO, socket: Cliente, registro: Registr
   });
 }
 
-/** Difunde el estado a la sala si la acción tuvo éxito y devuelve la respuesta para el ack. */
-function difundirAccion(io: IO, resultado: ResultadoAccion): RespuestaAccion {
-  if (!resultado.ok) return { ok: false, mensaje: resultado.mensaje };
-
+/** Difunde el nuevo estado a la sala (lo usan tanto las acciones de jugador como el auto-juego). */
+export function difundirEstado(io: IO, resultado: ResultadoAccion): void {
+  if (!resultado.ok) return;
   const { sala, estado, eventos, jugadasLegales } = resultado;
   io.to(sala.codigo).emit('estado_actualizado', { estado, eventos, jugadasLegales });
   if (estado.fase === 'TERMINADA' && estado.ganador) {
     io.to(sala.codigo).emit('partida_terminada', { ganador: estado.ganador });
   }
-  return { ok: true };
 }
 
 /** Llama al acknowledgement solo si el cliente envió uno (entrada no confiable). */

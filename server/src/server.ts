@@ -3,12 +3,14 @@ import { createServer as createHttpServer, type Server as HttpServer } from 'htt
 import { Server } from 'socket.io';
 import type { EventosCliente, EventosServidor } from '@parchis/shared';
 import { RegistroSalas } from './salas/registro';
-import { registrarHandlersSala } from './salas/handlers';
+import { registrarHandlersSala, difundirEstado } from './salas/handlers';
+import { GestorTemporizadores, type OpcionesTemporizadores } from './salas/temporizadores';
 
 export interface ServidorParchis {
   httpServer: HttpServer;
   io: Server<EventosCliente, EventosServidor>;
   registro: RegistroSalas;
+  temporizadores: GestorTemporizadores;
 }
 
 /**
@@ -18,6 +20,8 @@ export interface ServidorParchis {
 export interface OpcionesServidor {
   /** Inyecta el RNG del dado (tests deterministas). Por defecto, aleatorio real. */
   lanzarDado?: () => number;
+  /** Duraciones de los temporizadores de turno (tests con tiempos cortos). */
+  temporizadores?: OpcionesTemporizadores;
 }
 
 export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis {
@@ -40,11 +44,16 @@ export function crearServidor(opciones: OpcionesServidor = {}): ServidorParchis 
   });
 
   const registro = new RegistroSalas(opciones.lanzarDado);
+  const temporizadores = new GestorTemporizadores(
+    registro,
+    (resultado) => difundirEstado(io, resultado),
+    opciones.temporizadores,
+  );
 
   io.on('connection', (socket) => {
     socket.on('ping', () => socket.emit('pong'));
-    registrarHandlersSala(io, socket, registro);
+    registrarHandlersSala(io, socket, registro, temporizadores);
   });
 
-  return { httpServer, io, registro };
+  return { httpServer, io, registro, temporizadores };
 }

@@ -8,7 +8,7 @@ import type {
   RespuestaUnirse,
 } from '@parchis/shared';
 import { codigoValido, generarCodigoUnico, normalizarCodigo } from './codigo';
-import { crearEstadoInicial, jugadasLegales, reducir, type Accion } from '../motor';
+import { crearEstadoInicial, elegirFichaAuto, jugadasLegales, reducir, type Accion } from '../motor';
 import { lanzarDado as lanzarDadoPorDefecto } from '../partida/dado';
 import {
   COLORES,
@@ -210,16 +210,36 @@ export class RegistroSalas {
   /** Aplica una acción de juego con el color del jugador del socket (servidor autoritativo). */
   private aplicarAccion(socketId: string, construir: (color: Color) => Accion): ResultadoAccion {
     const ctx = this.resolver(socketId);
-    if (!ctx) return { ok: false, mensaje: 'No estás en una partida.' };
+    if (!ctx || !ctx.sala.partida) return { ok: false, mensaje: 'No estás en una partida.' };
+    return this.aplicarEnSala(ctx.sala, construir(ctx.jugador.color));
+  }
 
-    const { sala, jugador } = ctx;
-    if (!sala.partida) return { ok: false, mensaje: 'No estás en una partida.' };
-
-    const { estado, eventos, error } = reducir(sala.partida, construir(jugador.color));
+  private aplicarEnSala(sala: SalaInterna, accion: Accion): ResultadoAccion {
+    if (!sala.partida) return { ok: false, mensaje: 'No hay partida en curso.' };
+    const { estado, eventos, error } = reducir(sala.partida, accion);
     if (error) return { ok: false, mensaje: error };
 
     sala.partida = estado;
     sala.actualizadaEn = Date.now();
     return { ok: true, sala, estado, eventos, jugadasLegales: jugadasLegales(estado) };
+  }
+
+  salaPorCodigo(codigo: string): SalaInterna | undefined {
+    return this.salas.get(codigo);
+  }
+
+  /** Juega automáticamente por el jugador en turno (timeout/AFK): tira, mueve o pasa. */
+  autoJugar(codigo: string): ResultadoAccion | null {
+    const sala = this.salas.get(codigo);
+    if (!sala || !sala.partida || sala.partida.fase !== 'EN_CURSO') return null;
+
+    const estado = sala.partida;
+    const color = estado.turnoActual;
+    if (estado.dado === null && estado.bonusPendiente === null) {
+      return this.aplicarEnSala(sala, { tipo: 'TIRAR_DADO', color, valor: this.lanzarDado() });
+    }
+    const fichaId = elegirFichaAuto(estado);
+    if (fichaId === null) return this.aplicarEnSala(sala, { tipo: 'PASAR_TURNO', color });
+    return this.aplicarEnSala(sala, { tipo: 'MOVER_FICHA', color, fichaId });
   }
 }
