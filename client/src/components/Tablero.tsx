@@ -27,7 +27,7 @@ export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props
         const cx = (g[0].x + g[3].x) / 2;
         const cy = (g[0].y + g[3].y) / 2;
         return (
-          <rect key={`casa-${color}`} x={cx - 11} y={cy - 11} width={22} height={22} rx={3} fill={COLOR_HEX[color]} opacity={0.12} />
+          <rect key={`casa-${color}`} x={cx - 8} y={cy - 8} width={16} height={16} rx={3} fill={COLOR_HEX[color]} opacity={0.14} />
         );
       })}
 

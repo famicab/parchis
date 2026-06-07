@@ -11,11 +11,11 @@ describe('layout del tablero', () => {
     expect(ANILLO.every(dentroDelTablero)).toBe(true);
   });
 
-  it('las salidas caen en el centro de cada lado', () => {
-    expect(ANILLO[0]).toMatchObject({ y: 10 }); // arriba
-    expect(ANILLO[17].x).toBeCloseTo(90); // derecha
-    expect(ANILLO[34].y).toBeCloseTo(90); // abajo
-    expect(ANILLO[51].x).toBeCloseTo(10); // izquierda
+  it('las salidas caen en las esquinas, junto a cada casa', () => {
+    expect(ANILLO[0]).toEqual({ x: 15, y: 15 }); // sup-izq (rojo)
+    expect(ANILLO[17]).toEqual({ x: 85, y: 15 }); // sup-der (azul)
+    expect(ANILLO[34]).toEqual({ x: 85, y: 85 }); // inf-der (amarillo)
+    expect(ANILLO[51]).toEqual({ x: 15, y: 85 }); // inf-izq (verde)
   });
 
   it('cada color tiene 7 cuadros de pasillo y 4 plazas de garaje', () => {
