@@ -13,9 +13,10 @@ export const AVANCE_META = ULTIMO_AVANCE_ANILLO + PASOS_PASILLO + 1; // 71
 
 export const SALIDA: Record<Color, number> = { rojo: 0, azul: 17, amarillo: 34, verde: 51 };
 
-// Salidas (4) + seguros intermedios (8). En un seguro no se puede comer.
+// Seguros simétricos: en cada cuadrante de 17, la salida y dos más (+7, +12).
+// En un seguro no se puede comer.
 export const CASILLAS_SEGURAS: ReadonlySet<number> = new Set([
-  0, 17, 34, 51, 7, 12, 22, 29, 39, 46, 56, 63,
+  0, 7, 12, 17, 24, 29, 34, 41, 46, 51, 58, 63,
 ]);
 
 export type Posicion =

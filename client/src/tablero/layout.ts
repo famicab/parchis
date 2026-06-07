@@ -60,12 +60,13 @@ export const META: Record<Color, Punto> = {
   verde: { x: 50, y: 53.79 },
 };
 
+// Cada garaje en la esquina contigua a la salida de su color.
 export const GARAJE: Record<Color, Punto[]> = {
-  rojo: [{ x: 83, y: 7 }, { x: 93, y: 7 }, { x: 83, y: 17 }, { x: 93, y: 17 }],
-  azul: [{ x: 7, y: 7 }, { x: 17, y: 7 }, { x: 7, y: 17 }, { x: 17, y: 17 }],
-  amarillo: [{ x: 7, y: 83 }, { x: 17, y: 83 }, { x: 7, y: 93 }, { x: 17, y: 93 }],
-  verde: [{ x: 83, y: 83 }, { x: 93, y: 83 }, { x: 83, y: 93 }, { x: 93, y: 93 }],
+  rojo: [{ x: 83, y: 83 }, { x: 93, y: 83 }, { x: 83, y: 93 }, { x: 93, y: 93 }], // inf-der
+  azul: [{ x: 83, y: 7 }, { x: 93, y: 7 }, { x: 83, y: 17 }, { x: 93, y: 17 }], // sup-der
+  amarillo: [{ x: 7, y: 7 }, { x: 17, y: 7 }, { x: 7, y: 17 }, { x: 17, y: 17 }], // sup-izq
+  verde: [{ x: 7, y: 83 }, { x: 17, y: 83 }, { x: 7, y: 93 }, { x: 17, y: 93 }], // inf-izq
 };
 
-// Espejo de motor/tablero (solo para resaltar seguros visualmente).
-export const SEGUROS: ReadonlyArray<number> = [0, 17, 34, 51, 7, 12, 22, 29, 39, 46, 56, 63];
+// Espejo de motor/tablero (mismo conjunto simétrico de seguros).
+export const SEGUROS: ReadonlyArray<number> = [0, 7, 12, 17, 24, 29, 34, 41, 46, 51, 58, 63];

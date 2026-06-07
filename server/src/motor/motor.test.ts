@@ -110,12 +110,12 @@ describe('motor · capturas y bonificaciones', () => {
     const estado = base({
       dado: 5,
       fichas: {
-        rojo: [F(0, 'ANILLO', { casilla: 17 }), ...garaje().slice(1)], // 17+5 = 22 (seguro)
-        azul: [F(0, 'ANILLO', { casilla: 22 }), ...garaje().slice(1)],
+        rojo: [F(0, 'ANILLO', { casilla: 7 }), ...garaje().slice(1)], // 7+5 = 12 (seguro)
+        azul: [F(0, 'ANILLO', { casilla: 12 }), ...garaje().slice(1)],
       },
     });
     const r = reducir(estado, { tipo: 'MOVER_FICHA', color: 'rojo', fichaId: 0 });
-    expect(r.estado.fichas.azul![0]).toMatchObject({ zona: 'ANILLO', casilla: 22 }); // sigue ahí
+    expect(r.estado.fichas.azul![0]).toMatchObject({ zona: 'ANILLO', casilla: 12 }); // sigue ahí
     expect(r.estado.bonusPendiente).toBeNull();
   });
 
