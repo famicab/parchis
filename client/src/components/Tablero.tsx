@@ -12,15 +12,20 @@ interface Props {
   onMover: (fichaId: number) => void;
 }
 
+// Rotación del tablero para que cada jugador vea su garaje (y su brazo) abajo a la derecha.
+const ANGULO_POR_COLOR: Record<Color, number> = { rojo: -90, azul: 0, amarillo: 90, verde: 180 };
+
 /** Render del tablero: anillo, seguros, pasillos/garajes/meta por color y las fichas. */
 export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props) {
   const colorSalida = new Map<number, Color>();
   estado.colores.forEach((color) => colorSalida.set(SALIDA[color], color));
+  const angulo = miColor ? ANGULO_POR_COLOR[miColor] : 0;
 
   return (
     <svg viewBox={VIEWBOX} className="tablero" role="img" aria-label="Tablero de parchís">
       <rect x={0} y={0} width={100} height={100} rx={3} fill="#faf7ee" />
 
+      <g transform={`rotate(${angulo} 50 50)`}>
       {/* Casas (garajes) coloreadas en las esquinas */}
       {estado.colores.map((color) => {
         const g = GARAJE[color];
@@ -74,6 +79,7 @@ export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props
           );
         }),
       )}
+      </g>
     </svg>
   );
 }

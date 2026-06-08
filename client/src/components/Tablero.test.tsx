@@ -47,4 +47,15 @@ describe('Tablero', () => {
     fireEvent.click(screen.getByTestId('ficha-rojo-1')); // 1 no está en jugables
     expect(onMover).not.toHaveBeenCalled();
   });
+
+  it('rota el tablero según el color del jugador (su garaje abajo-derecha)', () => {
+    const { container, rerender } = render(
+      <Tablero estado={estado} jugables={new Set()} esMiTurno={false} miColor="azul" onMover={() => {}} />,
+    );
+    expect(container.querySelector('g[transform="rotate(0 50 50)"]')).toBeTruthy();
+    rerender(
+      <Tablero estado={estado} jugables={new Set()} esMiTurno={false} miColor="verde" onMover={() => {}} />,
+    );
+    expect(container.querySelector('g[transform="rotate(180 50 50)"]')).toBeTruthy();
+  });
 });
