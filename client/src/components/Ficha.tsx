@@ -8,10 +8,12 @@ interface Props {
   cy: number;
   jugable: boolean;
   onClick: () => void;
+  /** Reduce el tamaño cuando varias fichas comparten casilla (abanico). */
+  escala?: number;
 }
 
 /** Una ficha en el tablero SVG. Si es jugada legal, resalta y amplía el área táctil. */
-export function Ficha({ color, fichaId, cx, cy, jugable, onClick }: Props) {
+export function Ficha({ color, fichaId, cx, cy, jugable, onClick, escala = 1 }: Props) {
   return (
     <g>
       {jugable && (
@@ -19,7 +21,7 @@ export function Ficha({ color, fichaId, cx, cy, jugable, onClick }: Props) {
         <circle
           cx={cx}
           cy={cy}
-          r={5}
+          r={4.5 * escala}
           fill="transparent"
           style={{ cursor: 'pointer' }}
           onClick={onClick}
@@ -30,7 +32,7 @@ export function Ficha({ color, fichaId, cx, cy, jugable, onClick }: Props) {
         data-testid={`ficha-${color}-${fichaId}`}
         cx={cx}
         cy={cy}
-        r={jugable ? 3 : 2.6}
+        r={(jugable ? 3 : 2.6) * escala}
         fill={COLOR_HEX[color]}
         stroke={jugable ? '#111' : '#0006'}
         strokeWidth={jugable ? 0.9 : 0.4}

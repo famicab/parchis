@@ -48,6 +48,26 @@ describe('Tablero', () => {
     expect(onMover).not.toHaveBeenCalled();
   });
 
+  it('separa en abanico dos fichas que comparten casilla', () => {
+    const apiladas: EstadoPartida = {
+      ...estado,
+      fichas: {
+        rojo: [
+          { id: 0, zona: 'ANILLO', casilla: 5 },
+          { id: 1, zona: 'ANILLO', casilla: 5 },
+          { id: 2, zona: 'GARAJE' },
+          { id: 3, zona: 'GARAJE' },
+        ],
+        azul: garaje(),
+      },
+    };
+    render(<Tablero estado={apiladas} jugables={new Set()} esMiTurno={false} miColor="rojo" onMover={() => {}} />);
+    const a = screen.getByTestId('ficha-rojo-0');
+    const b = screen.getByTestId('ficha-rojo-1');
+    const distintas = a.getAttribute('cx') !== b.getAttribute('cx') || a.getAttribute('cy') !== b.getAttribute('cy');
+    expect(distintas).toBe(true);
+  });
+
   it('rota el tablero según el color del jugador (su garaje abajo-derecha)', () => {
     const { container, rerender } = render(
       <Tablero estado={estado} jugables={new Set()} esMiTurno={false} miColor="azul" onMover={() => {}} />,

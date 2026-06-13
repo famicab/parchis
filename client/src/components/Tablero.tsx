@@ -15,11 +15,41 @@ interface Props {
 // Rotación del tablero para que cada jugador vea su garaje (y su brazo) abajo a la derecha.
 const ANGULO_POR_COLOR: Record<Color, number> = { rojo: -90, azul: 0, amarillo: 90, verde: 180 };
 
+const RADIO_ABANICO = 1.6;
+/** Desplazamiento de una ficha dentro de un grupo que comparte casilla. */
+function offsetAbanico(indice: number, total: number): { dx: number; dy: number } {
+  if (total <= 1) return { dx: 0, dy: 0 };
+  const ang = (2 * Math.PI * indice) / total - Math.PI / 2;
+  return { dx: Math.cos(ang) * RADIO_ABANICO, dy: Math.sin(ang) * RADIO_ABANICO };
+}
+
 /** Render del tablero: anillo, seguros, pasillos/garajes/meta por color y las fichas. */
 export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props) {
   const colorSalida = new Map<number, Color>();
   estado.colores.forEach((color) => colorSalida.set(SALIDA[color], color));
   const angulo = miColor ? ANGULO_POR_COLOR[miColor] : 0;
+
+  // Fichas con su coordenada; las que comparten casilla se abren en abanico para verse todas.
+  const fichas = estado.colores.flatMap((color) =>
+    (estado.fichas[color] ?? []).map((ficha) => {
+      const { x, y } = coordenadaFicha(color, ficha);
+      return { color, ficha, x, y };
+    }),
+  );
+  const totalEnCasilla = new Map<string, number>();
+  for (const f of fichas) {
+    const clave = `${f.x},${f.y}`;
+    totalEnCasilla.set(clave, (totalEnCasilla.get(clave) ?? 0) + 1);
+  }
+  const indiceEnCasilla = new Map<string, number>();
+  const fichasRender = fichas.map((f) => {
+    const clave = `${f.x},${f.y}`;
+    const total = totalEnCasilla.get(clave)!;
+    const indice = indiceEnCasilla.get(clave) ?? 0;
+    indiceEnCasilla.set(clave, indice + 1);
+    const { dx, dy } = offsetAbanico(indice, total);
+    return { ...f, cx: f.x + dx, cy: f.y + dy, escala: total > 1 ? 0.74 : 1 };
+  });
 
   return (
     <svg viewBox={VIEWBOX} className="tablero" role="img" aria-label="Tablero de parchís">
@@ -62,23 +92,21 @@ export function Tablero({ estado, jugables, esMiTurno, miColor, onMover }: Props
         </g>
       ))}
 
-      {estado.colores.flatMap((color) =>
-        (estado.fichas[color] ?? []).map((ficha) => {
-          const { x, y } = coordenadaFicha(color, ficha);
-          const jugable = esMiTurno && color === miColor && jugables.has(ficha.id);
-          return (
-            <Ficha
-              key={`${color}-${ficha.id}`}
-              color={color}
-              fichaId={ficha.id}
-              cx={x}
-              cy={y}
-              jugable={jugable}
-              onClick={() => onMover(ficha.id)}
-            />
-          );
-        }),
-      )}
+      {fichasRender.map(({ color, ficha, cx, cy, escala }) => {
+        const jugable = esMiTurno && color === miColor && jugables.has(ficha.id);
+        return (
+          <Ficha
+            key={`${color}-${ficha.id}`}
+            color={color}
+            fichaId={ficha.id}
+            cx={cx}
+            cy={cy}
+            jugable={jugable}
+            escala={escala}
+            onClick={() => onMover(ficha.id)}
+          />
+        );
+      })}
       </g>
     </svg>
   );
