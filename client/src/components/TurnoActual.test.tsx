@@ -16,14 +16,19 @@ const jugadores: Jugador[] = [
 afterEach(cleanup);
 
 describe('TurnoActual', () => {
-  it('marca al jugador desconectado', () => {
+  it('muestra el nombre del jugador en turno, no el color', () => {
     render(<TurnoActual estado={estado} miColor="rojo" jugadores={jugadores} />);
-    expect(screen.getByText(/azul \(desconectado\)/)).toBeTruthy();
+    expect(screen.getByText(/Turno de/).textContent).toContain('Ana'); // rojo = Ana
+  });
+
+  it('marca al jugador desconectado por su nombre', () => {
+    render(<TurnoActual estado={estado} miColor="rojo" jugadores={jugadores} />);
+    expect(screen.getByText(/Beto \(desconectado\)/)).toBeTruthy();
   });
 
   it('marca como ausente a quien lo está', () => {
     const conAusente = jugadores.map((j) => (j.color === 'azul' ? { ...j, conectado: true, ausente: true } : j));
     render(<TurnoActual estado={estado} miColor="rojo" jugadores={conAusente} />);
-    expect(screen.getByText(/azul \(ausente\)/)).toBeTruthy();
+    expect(screen.getByText(/Beto \(ausente\)/)).toBeTruthy();
   });
 });

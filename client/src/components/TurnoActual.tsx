@@ -14,22 +14,23 @@ function etiquetaPresencia(jugador: Jugador | undefined): string {
   return '';
 }
 
-/** Indica de quién es el turno y el estado (conexión/ausencia) de cada jugador. */
+/** Indica de quién es el turno (por nombre) y el estado de cada jugador. */
 export function TurnoActual({ estado, miColor, jugadores }: Props) {
   const porColor = (color: Color) => jugadores.find((j) => j.color === color);
+  const nombreDe = (color: Color) => porColor(color)?.nombre ?? color;
 
   return (
     <div className="turno">
       <p>
         Turno de{' '}
-        <strong style={{ color: COLOR_HEX[estado.turnoActual] }}>{estado.turnoActual}</strong>
+        <strong style={{ color: COLOR_HEX[estado.turnoActual] }}>{nombreDe(estado.turnoActual)}</strong>
         {estado.turnoActual === miColor ? ' (tú)' : ''}
       </p>
       <ul className="jugadores-color">
         {estado.colores.map((color) => (
           <li key={color}>
             <span className="punto" style={{ backgroundColor: COLOR_HEX[color] }} aria-hidden="true" />
-            {color}
+            {nombreDe(color)}
             {color === miColor ? ' (tú)' : ''}
             {etiquetaPresencia(porColor(color))}
           </li>
